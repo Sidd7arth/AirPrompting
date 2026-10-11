@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # AirPrompt
 
 Fast, private, local-first **voice dictation** and **voice actions** for macOS and Windows.
