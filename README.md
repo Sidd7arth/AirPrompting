@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # AirPrompt
 
 Fast, private, local-first **voice dictation** and **voice actions** for macOS and Windows.
@@ -149,3 +150,7 @@ mile to **RELEASE READY**.
 Note: [docs/STATUS.md](docs/STATUS.md) and [docs/TEST_REPORT.md](docs/TEST_REPORT.md)
 are earlier, pre-shell audits kept for history; RELEASE_READINESS.md supersedes
 their verdicts.
+=======
+# AirPrompting
+Open-source AI voice-to-text assistant that turns natural speech into polished prompts, commands, and text.
+>>>>>>> 0c1ac8b666ce8aaf666413721253c4f8b81747b2
