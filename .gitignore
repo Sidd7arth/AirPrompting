@@ -1,0 +1,44 @@
+# Dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Rust
+target/
+**/target/
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+.DS_Store
+
+# Environment — `.env.example` is the tracked template; real config is not.
+.env
+.env.local
+.env.*.local
+
+# Secrets. None of these should ever exist in the working tree, but if one does,
+# it must not be committable.
+*.pfx
+*.p12
+*.pem
+*.key
+!**/public/*.pem
+credentials.json
+AuthKey_*.p8
+
+# Downloaded speech models must never end up in the repository.
+*.bin
+*.ggml
+*.gguf
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# Tauri
+src-tauri/gen/

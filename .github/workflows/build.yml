@@ -1,0 +1,166 @@
+name: Build and package
+
+# Reusable: produces the real installers. Signing and notarisation are gated on
+# credentials that this repository does not hold; when they are absent the job
+# still builds and packages, but names the artifacts `-unsigned` and warns
+# instead of pretending a signed release was produced (spec §54).
+on:
+  workflow_call:
+    inputs:
+      nightly:
+        description: Mark the run as a non-release build
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  package:
+    name: Package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            bundle: dmg
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bundle: msi,nsis
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.target }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Version consistency
+        run: node scripts/check-versions.mjs
+
+      - name: Branding guard
+        run: node scripts/check-branding.mjs
+
+      - name: Secret guard
+        run: node scripts/check-secrets.mjs
+
+      # Signing material is read from the environment by Tauri. Presence is
+      # reported, never assumed.
+      - name: Detect signing credentials (macOS)
+        if: runner.os == 'macOS'
+        id: signing
+        run: |
+          if [ -n "${{ secrets.APPLE_CERTIFICATE }}" ] && [ -n "${{ secrets.APPLE_SIGNING_IDENTITY }}" ]; then
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Unsigned build::No Apple Developer ID credentials were provided, so the macOS artifact will be unsigned and cannot be notarised (spec §54)."
+          fi
+
+      - name: Detect signing credentials (Windows)
+        if: runner.os == 'Windows'
+        id: signing
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.WINDOWS_CERTIFICATE }}" ]; then
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Unsigned build::No Windows code-signing certificate was provided, so SmartScreen will warn on first run (spec §54)."
+          fi
+
+      - name: Import Apple certificate
+        if: runner.os == 'macOS' && steps.signing.outputs.signed == 'true'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          rm certificate.p12
+
+      - name: Build Tauri application and installers
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npm run tauri build -- --target ${{ matrix.target }} --bundles ${{ matrix.bundle }}
+
+      - name: Notarise (macOS, requires credentials)
+        if: runner.os == 'macOS' && steps.signing.outputs.signed == 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          APP=$(find src-tauri/target/${{ matrix.target }}/release/bundle/macos -maxdepth 1 -name '*.app' | head -1)
+          echo "notarising $APP"
+          ditto -c -k --keepParent "$APP" app.zip
+          xcrun notarytool submit app.zip \
+            --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" \
+            --wait --timeout 30m
+          xcrun stapler staple "$APP"
+          xcrun stapler validate "$APP"
+
+      - name: Notarisation check (cannot run without credentials)
+        if: runner.os == 'macOS' && steps.signing.outputs.signed != 'true'
+        run: |
+          echo "::warning title=Notarisation BLOCKED::The DMG is built but unsigned and un-notarised. Gatekeeper will refuse it on another Mac."
+
+      - name: Verify artifact exists and report it
+        shell: bash
+        run: |
+          set -euo pipefail
+          find "src-tauri/target/${{ matrix.target }}/release/bundle" -type f \
+            \( -name '*.dmg' -o -name '*.app' -o -name '*.msi' -o -name '*.exe' \) -print
+
+      - name: Sign Windows installers
+        if: runner.os == 'Windows' && steps.signing.outputs.signed == 'true'
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Recurse -Path src-tauri/target -Include *.msi,*.exe |
+            Where-Object { $_.FullName -match 'bundle' }
+          foreach ($file in $files) {
+            & signtool sign /fd SHA256 /f certificate.pfx /p "${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}" $file.FullName
+          }
+
+      - name: Checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          find src-tauri/target/${{ matrix.target }}/release/bundle -type f \
+            \( -name '*.dmg' -o -name '*.msi' -o -name '*.exe' \) -exec cp {} artifacts/ \;
+          cd artifacts
+          if command -v sha256sum >/dev/null; then sha256sum * > SHA256SUMS.txt; else shasum -a 256 * > SHA256SUMS.txt; fi
+          cat SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: airprompt-${{ matrix.os }}${{ inputs.nightly && '-nightly' || '' }}
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: ${{ inputs.nightly && 7 || 30 }}

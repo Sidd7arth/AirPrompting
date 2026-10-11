@@ -1,0 +1,61 @@
+[package]
+name = "airprompt"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77"
+description = "AirPrompt — fast, private, local-first voice dictation and voice actions."
+default-run = "airprompt"
+
+# The shared core and the OS adapters live in sibling crates so they can be
+# tested without a GUI or a Tauri toolchain.
+[workspace]
+members = ["core", "platform"]
+resolver = "2"
+
+[lib]
+name = "airprompt_lib"
+path = "src/lib.rs"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "airprompt"
+path = "src/main.rs"
+
+# The shell crate is compiled as one crate: lib.rs declares the modules, and
+# main.rs links the binary target to the same library.
+
+[dependencies]
+airprompt-core = { path = "core" }
+airprompt-platform = { path = "platform" }
+
+# Microphone capture. Wasapi/CoreAudio/ALSA backends are selected by cpal.
+cpal = "0.15"
+# Per-user application directories (data, cache, log).
+dirs = "5"
+
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-single-instance = "2"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["sync", "rt-multi-thread", "macros", "time"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tracing-appender = "0.2"
+
+[dev-dependencies]
+tempfile = "3"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="AirPrompt — fast, private, local-first voice dictation and voice actions for macOS and Windows. Press, speak, see, insert, done."
+    />
+    <title>AirPrompt — voice dictation that stays on your machine</title>
+    <script>
+      // Match the app: dark before first paint, persisted preference wins.
+      (function () {
+        try {
+          var stored =
+            localStorage.getItem("airprompt.theme") || "system";
+          var dark =
+            stored === "dark" ||
+            (stored === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", dark);
+        } catch (e) {
+          /* theme is cosmetic; never block startup */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="landing"></div>
+    <script type="module" src="/src/landing/main.ts"></script>
+  </body>
+</html>

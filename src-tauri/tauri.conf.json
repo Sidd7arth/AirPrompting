@@ -1,0 +1,88 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AirPrompt",
+  "mainBinaryName": "airprompt",
+  "version": "0.1.0",
+  "identifier": "com.airprompt.app",
+
+  "build": {
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+
+  "app": {
+    "withGlobalTauri": false,
+    "macOSPrivateApi": true,
+
+    "windows": [
+      {
+        "label": "main",
+        "title": "AirPrompt",
+        "url": "index.html",
+        "width": 1000,
+        "height": 740,
+        "minWidth": 760,
+        "minHeight": 540,
+        "resizable": true,
+        "center": true,
+        "visible": false
+      },
+      {
+        "label": "overlay",
+        "url": "overlay.html",
+        "width": 660,
+        "height": 220,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "focus": false,
+        "focusable": false,
+        "shadow": false,
+        "center": false,
+        "visibleOnAllWorkspaces": true,
+        "visible": false
+      }
+    ],
+
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost ws://localhost:1421 http://localhost:1420",
+      "capabilities": ["default"]
+    },
+
+    "trayIcon": {
+      "id": "main",
+      "iconPath": "icons/tray.png",
+      "tooltip": "AirPrompt"
+    }
+  },
+
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Productivity",
+    "shortDescription": "Local-first voice dictation and voice actions",
+    "longDescription": "AirPrompt turns speech into text in any application and runs safe, predefined voice actions. Speech recognition runs on this machine, audio is never uploaded, and dictation works offline.",
+    "resources": [],
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    },
+    "windows": {
+      "wix": {
+        "language": "en-US"
+      }
+    }
+  },
+
+  "plugins": {}
+}

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>%APP_NAME%</title>
+    <script>
+      // Apply the persisted theme before first paint so the window never flashes
+      // the wrong colour. Kept inline (not a module) to avoid a render-blocking
+      // fetch. The %TOKENS% are substituted at build time from src/identity.ts,
+      // and the earlier key is still read so an existing preference survives.
+      (function () {
+        try {
+          var stored =
+            localStorage.getItem("%STORAGE_PREFIX%.theme") ||
+            localStorage.getItem("%LEGACY_STORAGE_PREFIX%.theme") ||
+            "system";
+          var dark =
+            stored === "dark" ||
+            (stored === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", dark);
+        } catch (e) {
+          /* theme is cosmetic; never block startup */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

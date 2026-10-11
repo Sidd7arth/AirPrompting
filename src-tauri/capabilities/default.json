@@ -1,0 +1,24 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissions for the AirPrompt dashboard and overlay windows. Only the plugins the app actually uses are granted, and each is granted its default set rather than blanket access.",
+  "windows": ["main", "overlay"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "core:window:allow-set-position",
+    "core:window:allow-set-size",
+    "core:window:allow-is-visible",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging",
+    "core:app:allow-version",
+    "dialog:default",
+    "opener:default",
+    "global-shortcut:default",
+    "clipboard-manager:default",
+    "autostart:default"
+  ]
+}

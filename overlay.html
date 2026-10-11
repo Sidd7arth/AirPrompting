@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" class="dark overlay-window">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>%APP_NAME% Overlay</title>
+    <script>
+      // Apply the persisted theme before first paint. The inline script only
+      // toggles the `dark` class, so the `overlay-window` class that makes this
+      // window transparent survives. The %TOKENS% come from src/identity.ts.
+      (function () {
+        try {
+          var stored =
+            localStorage.getItem("%STORAGE_PREFIX%.theme") ||
+            localStorage.getItem("%LEGACY_STORAGE_PREFIX%.theme") ||
+            "system";
+          var dark =
+            stored === "dark" ||
+            (stored === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", dark);
+        } catch (e) {
+          /* theme is cosmetic; never block startup */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/overlays/main.tsx"></script>
+  </body>
+</html>

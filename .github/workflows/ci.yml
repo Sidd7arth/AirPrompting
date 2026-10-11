@@ -1,0 +1,43 @@
+name: CI
+
+# The front door for every push and pull request.
+#
+#   push / PR          → tests on Linux, macOS and Windows (test.yml)
+#   push to main       → tests, then a real packaged build (build.yml)
+#   manual dispatch    → tests, optionally a build
+#
+# Every step runs the actual project: typecheck, build, cargo test, packaging.
+# There are no echo-only steps standing in for work (spec §7).
+on:
+  push:
+    branches: [main]
+    tags-ignore: ["**"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      build:
+        description: Also build and package installers
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Tests
+    uses: ./.github/workflows/test.yml
+
+  # Installers are expensive; they run on main and on request, never on a
+  # throwaway pull request.
+  package:
+    name: Package installers
+    needs: tests
+    if: github.event_name == 'workflow_dispatch' && inputs.build || github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/build.yml
+    with:
+      nightly: true

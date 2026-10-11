@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens (spec §71).
+ *
+ * Both themes are authored deliberately rather than inverted: the light theme
+ * uses a warm neutral paper tone, the dark theme a cool near-black that keeps
+ * the accent legible. Components only ever reference semantic token names.
+ */
+@layer base {
+  :root {
+    --bg: 40 20% 98%;
+    --surface: 0 0% 100%;
+    --elevated: 40 20% 96%;
+    --border: 30 8% 88%;
+    --fg: 30 10% 12%;
+    --muted: 30 6% 40%;
+    --faint: 30 6% 58%;
+    --accent: 166 72% 34%;
+    --accent-fg: 0 0% 100%;
+    --danger: 0 66% 47%;
+    --success: 152 58% 34%;
+    --warning: 32 84% 42%;
+    --recording: 0 72% 52%;
+  }
+
+  .dark {
+    --bg: 220 12% 8%;
+    --surface: 220 12% 11%;
+    --elevated: 220 11% 14%;
+    --border: 220 9% 22%;
+    --fg: 210 16% 96%;
+    --muted: 215 10% 65%;
+    --faint: 215 9% 48%;
+    --accent: 166 66% 45%;
+    --accent-fg: 220 20% 8%;
+    --danger: 0 68% 60%;
+    --success: 152 52% 48%;
+    --warning: 36 88% 58%;
+    --recording: 0 76% 62%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  /*
+   * The overlay window is transparent: the panel inside it supplies the
+   * surface, so the window edges must not paint a background of their own.
+   */
+  .overlay-window,
+  .overlay-window body,
+  .overlay-window #root {
+    background: transparent;
+    overflow: hidden;
+  }
+
+  body {
+    @apply bg-bg text-fg font-sans antialiased;
+    font-size: 14px;
+    /* A dictation tool is keyboard-first; never let text selection look accidental. */
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Visible focus for keyboard users (spec §102). */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent/70 ring-offset-1 ring-offset-bg;
+  }
+
+  ::selection {
+    background: hsl(var(--accent) / 0.28);
+  }
+
+  /* Quiet scrollbars — this is a utility, not a content site. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--faint));
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-border bg-surface;
+  }
+
+  /* The overlay surface: translucent, blurred, non-interactive by default. */
+  .overlay-panel {
+    @apply rounded-2xl border border-border/70 bg-surface/95 shadow-2xl;
+    backdrop-filter: blur(18px) saturate(140%);
+  }
+
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-lg px-3 py-1.5
+           text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-accent-fg hover:bg-accent/90;
+  }
+  .btn-secondary {
+    @apply btn border border-border bg-elevated text-fg hover:bg-elevated/70;
+  }
+  .btn-ghost {
+    @apply btn text-muted hover:bg-elevated hover:text-fg;
+  }
+  .btn-danger {
+    @apply btn border border-danger/40 text-danger hover:bg-danger/10;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-border bg-bg px-2.5 py-1.5 text-sm text-fg
+           placeholder:text-faint focus:border-accent/60 focus:outline-none;
+  }
+
+  .label {
+    @apply text-xs font-medium text-muted;
+  }
+
+  /* A keyboard key chip, e.g. ⌥ Space. */
+  .kbd {
+    @apply inline-flex min-w-[1.5rem] items-center justify-center rounded-md border border-border
+           bg-elevated px-1.5 py-0.5 font-mono text-2xs text-fg;
+  }
+
+  .row {
+    @apply flex items-center justify-between gap-4 py-3;
+  }
+
+  .section-title {
+    @apply text-sm font-semibold tracking-tight text-fg;
+  }
+
+  .hint {
+    @apply text-xs leading-relaxed text-muted;
+  }
+}
+
+/*
+ * Motion is decorative here, so respect the OS preference (spec §102).
+ * Animations stay in the 150–300 ms band (spec §108).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
