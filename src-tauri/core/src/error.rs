@@ -5,7 +5,7 @@
 
 use std::fmt;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
     #[error("unable to access microphone: {0}")]
     Microphone(String),
@@ -170,6 +170,21 @@ impl From<Error> for ErrorPayload {
             code: value.code(),
             message: value.message(),
         }
+    }
+}
+
+impl serde::Serialize for Error {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serde::Serialize::serialize(
+            &ErrorPayload {
+                code: self.code(),
+                message: self.message(),
+            },
+            serializer,
+        )
     }
 }
 

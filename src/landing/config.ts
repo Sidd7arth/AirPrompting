@@ -21,8 +21,8 @@
  * bundler output keeps working.
  */
 export const RELEASE_CONFIG = {
-  owner: "airprompt",
-  repo: "airprompt",
+  owner: "Sidd7arth",
+  repo: "AirPrompting",
 } as const;
 
 /** The GitHub API endpoint returning the latest stable (non-draft, non-prerelease) release. */

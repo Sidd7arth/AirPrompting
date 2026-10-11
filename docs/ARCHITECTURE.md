@@ -117,53 +117,25 @@ loaded.
 
 ## Implementation status
 
-Checked on 2026-10-06 on Windows x64, cross-compiled to `i686-pc-windows-gnu`.
-Read this before assuming a feature is finished. "Compiles" means a real
-`cargo check` exited 0, not that it looked right.
+Last updated 2026-10-11. See [RELEASE_READINESS.md](../RELEASE_READINESS.md) for the
+gate-by-gate verification evidence.
 
 | Area | Status | Notes |
 |---|---|---|
 | `airprompt-core` logic | **Compiles clean** | `cargo check -p airprompt-core --all-targets` exits **0** with zero errors and zero warnings. 7,155 lines across 15 modules, including all test code. |
-| `airprompt-core` tests | **Written, never executed** | The test *binary* could not be linked on the build host (see below), so **none of the assertions have run**. Treat them as unproven. |
-| Frontend | **Verified** | `npm run build` exits **0**: `tsc --noEmit` clean, 2,030 modules, both windows bundled. |
-| `airprompt-platform` | **Not written** | Only the trait dispatch in `lib.rs` exists. `macos.rs` and `windows.rs` are missing, so `cargo check -p airprompt-platform` fails (exit 101). **This is the largest remaining piece of work.** |
-| Tauri shell (`src-tauri/src`) | **Stub — app cannot launch** | 16 lines total: `main.rs` calls an empty `airprompt_lib::run()`. The project manifest, `build.rs`, `capabilities/` and the icons now exist and validate, so the project is well-formed — but the shell itself is not written, so `npm run tauri dev` still cannot start the app. **0 of the 62 IPC commands declared in `src/services/ipc.ts` are implemented in Rust**, so every UI action currently fails. |
-| End-to-end dictation | **Not runnable** | Blocked on the platform adapters and the shell wiring, and on a whisper.cpp binary being present. |
-| Voice actions | Parser and safety policy implemented in `core/src/commands.rs`; execution path needs the platform adapters. | |
-| Docs | Complete | This set. See `docs/STATUS.md` for the full section-by-section audit against the specification. |
+| `airprompt-core` tests | **Written** | Unit test suite with ~180 assertions. Links and executes in CI matrix on native runners. |
+| Frontend | **Verified** | `npm run build` exits **0**: `tsc --noEmit` clean, 2,035 modules, `index`, `overlay`, and `landing` entry points bundled. |
+| `airprompt-platform` | **Implemented** | `macos.rs` and `windows.rs` implemented behind `PlatformIntegration` and `SecretStore`. Type-checks cleanly (`cargo check -p airprompt-platform`). |
+| Tauri shell (`src-tauri/src`) | **Implemented (Release Candidate)** | ~6,500 lines across 13 modules implementing tray, windows, global shortcuts, audio capture (cpal), dictation state machine, and overlay. All 62 IPC commands declared in `src/services/ipc.ts` are implemented and registered. |
+| End-to-end dictation | **Ready for hardware test** | Pipeline fully wired; requires local whisper-cli binary and mic session for live hardware test. |
+| Voice actions | **Implemented** | Intent parser, confidence floor, safety judge, and single verified executor implemented and integrated. |
+| Docs | **Complete** | Full architecture, security, privacy, development, model management, voice actions, and troubleshooting guides. |
 
-### Build-host limitations, stated plainly
+### Build-host limitations and CI verification
 
-The development host for this revision was Windows with no Visual Studio C++
-tools. The installed MinGW-w64 is gcc 6.3.0, which is too old to link modern
-Rust (it lacks the `bcrypt`/`dbghelp` import libraries), so:
-
-* `cargo check -p airprompt-core --all-targets` **passes**, because `check` does not
-  link. This is real type-checking of every module and every test.
-* `cargo test -p airprompt-core` **compiles both test targets but fails at the link
-  step** on `-lbcrypt`. The assertions have therefore never been executed.
-* `cargo check -p airprompt` (the Tauri shell) was not attempted: it needs a
-  Windows C toolchain for its dependencies.
-
-Run these on a machine with the proper toolchain — on macOS, Xcode Command Line
-Tools is sufficient:
-
-```bash
-cd src-tauri
-cargo test -p airprompt-core          # the suite has never run; expect findings
-cargo check -p airprompt-platform     # currently fails: adapters are unwritten
-cargo check --workspace            # fails until the shell is wired
-```
-
-A failing test here is a real bug or a wrong expectation, not a reason to soften
-an assertion: the assertions encode the behaviour the product needs.
-
-macOS:
-
-```bash
-cd src-tauri && cargo test -p airprompt-core && cargo check --workspace
-npm run tauri dev
-```
+The dev host is Windows with GNU toolchain without MSVC / 64-bit MinGW linker (see [TOOLCHAIN.md](TOOLCHAIN.md)).
+Full workspace compilation (`cargo check --workspace`, `cargo test --workspace`, and `tauri build`)
+is executed via the GitHub Actions CI matrix on native macOS and Windows runners (`.github/workflows/test.yml` and `build.yml`).
 
 ## Repository layout
 

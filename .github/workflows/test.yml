@@ -104,6 +104,11 @@ jobs:
         working-directory: src-tauri
         run: cargo check --workspace --all-targets
 
+      - name: Workspace clippy (macOS and Windows)
+        if: runner.os != 'Linux'
+        working-directory: src-tauri
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
   lint:
     name: Lint and format
     runs-on: ubuntu-latest
@@ -124,7 +129,7 @@ jobs:
 
       - name: Clippy (deny warnings)
         working-directory: src-tauri
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy -p airprompt-core --all-targets -- -D warnings
 
   security:
     name: Security checks

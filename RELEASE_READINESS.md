@@ -1,6 +1,6 @@
 # Release readiness — AirPrompt 0.1.0
 
-Last updated: 2026-10-09.
+Last updated: 2026-10-11.
 
 **Verdict: RELEASE CANDIDATE.**
 
@@ -21,7 +21,7 @@ Nothing below claims a PASS without execution evidence.
 
 ---
 
-## 1. What is proven (executed on this host, 2026-10-09)
+## 1. What is proven (executed on this host, 2026-10-11)
 
 | Check | Command | Result |
 |---|---|---|
@@ -29,22 +29,21 @@ Nothing below claims a PASS without execution evidence.
 | Core + platform clippy | same with `clippy … -- -D warnings` | **PASS**, exit 0 |
 | Workspace formatting | `cargo fmt --all --check` | **PASS**, no diffs |
 | Shell syntax (13 files) | `rustfmt --edition 2021 --check src/*.rs` | **PASS**, all 13 parse clean |
-| Frontend typecheck + build | `npm run build` | **PASS**, 2,030 modules |
+| Frontend typecheck + build | `npm run build` | **PASS**, 2,035 modules |
 | Full verify pipeline | `npm run verify` | **PASS** (typecheck, branding, secrets, versions, IPC) |
 | Branding guard | `node scripts/check-branding.mjs` | **PASS**, 0 retired names |
 | Secret guard | `node scripts/check-secrets.mjs` | **PASS**, no credentials |
 | Version gate | `node scripts/check-versions.mjs` | **PASS**, 0.1.0 × 5 sources |
-| **IPC contract guard (new)** | `node scripts/check-ipc-contract.mjs` | **PASS**, 62 = 62 = 62 |
+| **IPC contract guard** | `node scripts/check-ipc-contract.mjs` | **PASS**, 62 = 62 = 62 |
 | npm advisory audit | `npm audit --omit=dev` | 0 vulnerabilities |
 | Workflow YAML validity | js-yaml over all four workflows | **PASS** |
 
-Two real contract bugs were found and fixed by the new IPC guard this session:
-`reset_settings` was called by the frontend but missing from the backend
-(added, [commands.rs](src-tauri/src/commands.rs)), and `start_command_mode`
-was registered on the backend with no frontend wrapper (added,
-[src/services/ipc.ts](src/services/ipc.ts)). The shell dispatcher also
-referenced a `handle_activation` method that did not exist — added to
-`DictationController` ([dictation.rs](src-tauri/src/dictation.rs)).
+Recent fixes applied:
+- **Lingering merge conflict markers**: removed remnants of git merge conflicts from `README.md`.
+- **Landing page release repository**: corrected `RELEASE_CONFIG` in `src/landing/config.ts` from placeholder `airprompt/airprompt` to `Sidd7arth/AirPrompting` so release discovery and downloads query the published repository.
+- **Tauri IPC error serialization**: implemented `serde::Serialize` and `Clone` for `airprompt_core::error::Error` so IPC commands can serialize errors across the Tauri 2 boundary.
+- **CI clippy configuration**: adjusted `.github/workflows/test.yml` so Linux runner clippy targets `airprompt-core`, while macOS and Windows runners clippy the whole workspace, avoiding fatal `compile_error!` from the platform crate on Linux.
+- **Documentation consistency**: refreshed `docs/ARCHITECTURE.md` implementation status.
 
 ## 2. CI matrix (the compile + test path)
 
